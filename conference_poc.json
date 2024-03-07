@@ -1,0 +1,58 @@
+{
+    "id": "meeting-uuid",
+    "meeting_url": "url",
+    "meeting_id": "123456789",
+    "meeting_pin": "9876",
+    "type": "meeting",
+    "name": "Nicholas and John Meeting",
+    "description": "Quick meeting to discuss opportunity",
+    "notes": "John asked a good question about the commerials, need to check",
+    "layout_id": "layout_uuid",
+    "scheduled_start": "1709763824",
+    "scheduled_finish": "1709767424",
+    "scheduled_duration": 3600,
+    "participants": [
+        {
+            "id": "uuid-1",
+            "name": "Nicholas",
+            "role": "host",
+            "video": true,
+            "audio": true,
+            "screen": true,
+            "join": "1709763824",
+            "leave": "1709767424",
+            "duration": 3600
+        },
+        {
+            "id": "uuid-2",
+            "name": "John",
+            "role": "participant",
+            "video": false,
+            "audio": true,
+            "screen": false,
+            "join": "1709763824",
+            "leave": "1709767424",
+            "duration": 3480
+        }
+    ],
+    "transcript": [
+        {
+            "time": "1709763824",
+            "participant_id": "uuid-1",
+            "participant_name": "Nicholas",
+            "message": "Good morning everyone, thank you for joining us today!"
+        },
+        {
+            "time": "1709763824",
+            "participant_id": "uuid-2",
+            "participant_name": "John",
+            "message": "Hi Nicholas, I have a question?"
+        },
+        {
+            "time": "1709763824",
+            "participant_id": "uuid-1",
+            "participant_name": "Nicholas",
+            "message": "Hi John, certainly ask away!"
+        }
+    ]
+}
