@@ -533,12 +533,12 @@ const exportFinalVideo = async (config) => {
 
 //render and export single video for video conference
 const renderVideoConference = async () => {
-  // makeTempDir();
-  // await buildIndividualStreams(config);
-  // await buildMainStream(config);
-  // await buildSubtitleStream(config);
+  makeTempDir();
+  await buildIndividualStreams(config);
+  await buildMainStream(config);
+  await buildSubtitleStream(config);
   await exportFinalVideo(config);
-  // clearTempDir();
+  clearTempDir();
 };
 
 const makeTempDir = () => {
