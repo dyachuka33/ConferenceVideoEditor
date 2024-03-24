@@ -15,6 +15,60 @@ const outputDir = "./output/";
 
 const config = require("./test/conference_poc.json");
 
+const layout = {
+  videoRectangle: {
+    x: 0,
+    y: 0,
+    width: 1440,
+    height: 1080,
+  },
+  chatRectangle: {
+    x: 1440,
+    y: 0,
+    width: 480,
+    height: 1080,
+  },
+  mainStreamRectangle: {
+    x: 360,
+    y: 30,
+    width: 720,
+    height: 540,
+  },
+  individualStreamsRectangle: {
+    x: 0,
+    y: 600,
+    width: 1440,
+    height: 480,
+    singleWidth: 288,
+    signleHeight: 240,
+  },
+};
+
+const getIndividualStreamRectangle = (idx) => {
+  if (idx < 5) {
+    y = layout.individualStreamsRectangle.y;
+    x = idx * layout.individualStreamsRectangle.singleWidth;
+    return {
+      x,
+      y,
+      width: layout.individualStreamsRectangle.singleWidth,
+      height: layout.individualStreamsRectangle.signleHeight,
+    };
+  } else {
+    idx -= 5;
+    y =
+      layout.individualStreamsRectangle.y +
+      layout.individualStreamsRectangle.signleHeight;
+    x = idx * layout.individualStreamsRectangle.singleWidth;
+    return {
+      x,
+      y,
+      width: layout.individualStreamsRectangle.singleWidth,
+      height: layout.individualStreamsRectangle.signleHeight,
+    };
+  }
+};
+
 const sleep = (delay) =>
   new Promise((resolve) => {
     setTimeout(() => resolve(), delay);
@@ -430,15 +484,60 @@ const mergeVideoClipsForMainStream = async (config) => {
 
 const buildSubtitleStream = (config) => {};
 
-const exportFinalVideo = () => {};
+const exportFinalVideo = async (config) => {
+  const destinationFile = outputDir + "result.mkv";
+  await new Promise((resolve, reject) => {
+    // let videoFilter = `[0:v]scale=1920:1080,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black[bkg]; [1:v]scale=720:540[main]; [2:v]scale=288:240[video1]; [3:v]scale=288:240[video2]; [bkg][main]overlay=360:30:enable='between(t,0,60)'[bg1]; [bg1][video1]overlay=0:600:enable='between(t,0,60)'[bg2]; [bg2][video2]overlay=288:600:enable='between(t,0,60)'`;
+    // let videoFilter = `[0:v]scale=1920:1080,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black[bkg]; [1:v]scale=720:540[main]; [2:v]scale=288:240[video0]; [3:v]scale=288:240[video1]; [bkg][main]overlay=360:30:enable='between(t,0,60)'[bg0]; [bg0][video0]overlay=0:600:enable='between(t,0,60)'[bg1]; [bg1][video1]overlay=288:600:enable='between(t,0,60)'[bg2];`;
+    let videoFilter = `[0:v]scale=1920:1080,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black[bkg]; [1:v]scale=${layout.mainStreamRectangle.width}:${layout.mainStreamRectangle.height}[main];`;
+
+    const ffmpeg = new FFMPEG();
+    const duration = config.scheduled_finish - config.scheduled_start;
+    ffmpeg.setFfmpegPath(ffmpegPath);
+    ffmpeg.setFfprobePath(ffprobePath);
+    ffmpeg.input(inputDir + "background.jpg");
+    ffmpeg.input(tempMainDir + "main.mkv");
+
+    config.participants.forEach((participant, index) => {
+      ffmpeg.input(tempIndividualDir + participant.id + ".mkv");
+      videoFilter += `[${index + 2}:v]scale=${
+        layout.individualStreamsRectangle.singleWidth
+      }:${layout.individualStreamsRectangle.signleHeight}[video${index}];`;
+    });
+    videoFilter += `[bkg][main]overlay=360:30:enable='between(t,0,${duration})'[bg0];`;
+    config.participants.forEach((participant, index) => {
+      let singleRect = getIndividualStreamRectangle(index);
+      videoFilter += `[bg${index}][video${index}]overlay=${singleRect.x}:${singleRect.y}:enable='between(t,0,${duration})'`;
+      if (index < config.participants.length - 1)
+        videoFilter += `[bg${index + 1}];`;
+    });
+
+    ffmpeg
+      .complexFilter(videoFilter)
+      .videoCodec("libx264")
+      .outputOptions(`-crf 23`)
+      .outputOptions(`-preset ultrafast`)
+      .outputOptions(`-t ${duration}`)
+      .output(destinationFile)
+      .on("end", function () {
+        console.log("Video concatenation finished");
+        resolve();
+      })
+      .on("error", function (err) {
+        console.error("Error concatenating videos:", err);
+        reject();
+      })
+      .run();
+  });
+};
 
 //render and export single video for video conference
 const renderVideoConference = async () => {
   // makeTempDir();
   // await buildIndividualStreams(config);
   // await buildMainStream(config);
-  await buildSubtitleStream(config);
-  await exportFinalVideo();
+  // await buildSubtitleStream(config);
+  await exportFinalVideo(config);
   // clearTempDir();
 };
 
