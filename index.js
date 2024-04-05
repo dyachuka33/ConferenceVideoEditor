@@ -179,7 +179,8 @@ const buildVideoClipForIndividualStream = async (
         .inputOptions("-framerate 30")
         .inputOptions("-t " + duration)
         .inputOptions("-loop 1")
-        .videoCodec("libx264")
+        .videoCodec("copy")
+        .outputOptions(`-preset ultrafast`)
         .outputOptions("-pix_fmt yuv420p")
         .outputOptions("-r 30")
         .output(destinationFile)
@@ -229,7 +230,8 @@ const mergeVideoClipsForIndividualStream = async (participant, config) => {
     ffmpeg
       .complexFilter(videoFilter)
       .outputOptions("-map [outv]")
-      .videoCodec("libx264")
+      .videoCodec("copy")
+      .outputOptions(`-preset ultrafast`)
       .outputOptions("-r 30")
       .outputOptions("-pix_fmt yuv420p")
       .output(destinationFile)
@@ -412,7 +414,8 @@ const buildVideoClipForMainStream = async (
         .input(sourceFile)
         .inputOptions("-ss " + startTime)
         .inputOptions("-to " + endTime)
-        .videoCodec("libx264")
+        .videoCodec("copy")
+        .outputOptions(`-preset ultrafast`)
         .outputOptions("-pix_fmt yuv420p")
         .outputOptions("-r 30")
         .output(destinationFile)
@@ -466,7 +469,8 @@ const mergeVideoClipsForMainStream = async (config) => {
     ffmpeg
       .complexFilter(videoFilter)
       .outputOptions("-map [outv]")
-      .videoCodec("libx264")
+      .videoCodec("copy")
+      .outputOptions(`-preset ultrafast`)
       .outputOptions("-r 30")
       .outputOptions("-pix_fmt yuv420p")
       .output(destinationFile)
@@ -514,7 +518,7 @@ const exportFinalVideo = async (config) => {
 
     ffmpeg
       .complexFilter(videoFilter)
-      .videoCodec("libx264")
+      .videoCodec("copy")
       .outputOptions(`-crf 23`)
       .outputOptions(`-preset ultrafast`)
       .outputOptions(`-t ${duration}`)
