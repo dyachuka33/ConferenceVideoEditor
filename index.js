@@ -12,62 +12,18 @@ const tempIndividualClipsDir = tempIndividualDir + "clips/";
 const tempMainDir = tempDir + "main/";
 const tempMainClipsDir = tempMainDir + "clips/";
 const outputDir = "./output/";
+const layouts = require("./layout.json");
 
 const config = require("./test/conference_poc.json");
+const participantsNum = config.participants.length;
+if (participantsNum < 2 || participantsNum > 10) {
+  console.log("not supported for " + participantsNum + " people");
+  return;
+}
+const layout = layouts.layout[participantsNum - 2];
 
-const layout = {
-  videoRectangle: {
-    x: 0,
-    y: 0,
-    width: 1440,
-    height: 1080,
-  },
-  chatRectangle: {
-    x: 1440,
-    y: 0,
-    width: 480,
-    height: 1080,
-  },
-  mainStreamRectangle: {
-    x: 360,
-    y: 30,
-    width: 720,
-    height: 540,
-  },
-  individualStreamsRectangle: {
-    x: 0,
-    y: 600,
-    width: 1440,
-    height: 480,
-    singleWidth: 288,
-    signleHeight: 240,
-  },
-};
-
-const getIndividualStreamRectangle = (idx) => {
-  if (idx < 5) {
-    y = layout.individualStreamsRectangle.y;
-    x = idx * layout.individualStreamsRectangle.singleWidth;
-    return {
-      x,
-      y,
-      width: layout.individualStreamsRectangle.singleWidth,
-      height: layout.individualStreamsRectangle.signleHeight,
-    };
-  } else {
-    idx -= 5;
-    y =
-      layout.individualStreamsRectangle.y +
-      layout.individualStreamsRectangle.signleHeight;
-    x = idx * layout.individualStreamsRectangle.singleWidth;
-    return {
-      x,
-      y,
-      width: layout.individualStreamsRectangle.singleWidth,
-      height: layout.individualStreamsRectangle.signleHeight,
-    };
-  }
-};
+const getIndividualStreamRectangle = (idx) =>
+  layout.individualStreamsRectangle.rectangles[idx];
 
 const sleep = (delay) =>
   new Promise((resolve) => {
@@ -179,7 +135,7 @@ const buildVideoClipForIndividualStream = async (
         .inputOptions("-framerate 30")
         .inputOptions("-t " + duration)
         .inputOptions("-loop 1")
-        .videoCodec("copy")
+        .videoCodec("libx264")
         .outputOptions(`-preset ultrafast`)
         .outputOptions("-pix_fmt yuv420p")
         .outputOptions("-r 30")
@@ -230,7 +186,7 @@ const mergeVideoClipsForIndividualStream = async (participant, config) => {
     ffmpeg
       .complexFilter(videoFilter)
       .outputOptions("-map [outv]")
-      .videoCodec("copy")
+      .videoCodec("libx264")
       .outputOptions(`-preset ultrafast`)
       .outputOptions("-r 30")
       .outputOptions("-pix_fmt yuv420p")
@@ -414,7 +370,7 @@ const buildVideoClipForMainStream = async (
         .input(sourceFile)
         .inputOptions("-ss " + startTime)
         .inputOptions("-to " + endTime)
-        .videoCodec("copy")
+        .videoCodec("libx264")
         .outputOptions(`-preset ultrafast`)
         .outputOptions("-pix_fmt yuv420p")
         .outputOptions("-r 30")
@@ -469,7 +425,7 @@ const mergeVideoClipsForMainStream = async (config) => {
     ffmpeg
       .complexFilter(videoFilter)
       .outputOptions("-map [outv]")
-      .videoCodec("copy")
+      .videoCodec("libx264")
       .outputOptions(`-preset ultrafast`)
       .outputOptions("-r 30")
       .outputOptions("-pix_fmt yuv420p")
@@ -505,8 +461,10 @@ const exportFinalVideo = async (config) => {
     config.participants.forEach((participant, index) => {
       ffmpeg.input(tempIndividualDir + participant.id + ".mkv");
       videoFilter += `[${index + 2}:v]scale=${
-        layout.individualStreamsRectangle.singleWidth
-      }:${layout.individualStreamsRectangle.signleHeight}[video${index}];`;
+        layout.individualStreamsRectangle.rectangles[0].width
+      }:${
+        layout.individualStreamsRectangle.rectangles[0].height
+      }[video${index}];`;
     });
     videoFilter += `[bkg][main]overlay=360:30:enable='between(t,0,${duration})'[bg0];`;
     config.participants.forEach((participant, index) => {
@@ -518,7 +476,7 @@ const exportFinalVideo = async (config) => {
 
     ffmpeg
       .complexFilter(videoFilter)
-      .videoCodec("copy")
+      .videoCodec("libx264")
       .outputOptions(`-crf 23`)
       .outputOptions(`-preset ultrafast`)
       .outputOptions(`-t ${duration}`)
